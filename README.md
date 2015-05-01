@@ -11,7 +11,11 @@ Set a pin on arduino board to be input (0) or output (1):
     
      {"cmd":"pinMode","pin":7,"val":1}
      
+
 ## digitalWrite
+
 Output HIGH (1) or LOW (0) from an output pin:
-    {"cmd":"digitalWrite","pin":7,"val":1}
+    
+     {"cmd":"digitalWrite","pin":7,"val":1}
+     
     
