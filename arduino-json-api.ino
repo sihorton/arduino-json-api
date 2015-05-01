@@ -24,7 +24,10 @@ long msgCount = 0;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  tagLogln("<message>protocol running " + libVersion + "</message>");
+  //tagLogln("<message>protocol running " + libVersion + "</message>");
+  tagOpen("message");
+  tagText("protocol running " + libVersion);
+  tagClose("message");
 }
 
 void loop() {
@@ -55,33 +58,52 @@ void loop() {
        }
        if (cmd == "pinMode") {
          handled = true;
-         tagLog("<pinMode pin='");
-         tagLog(root["pin"].as<long>());
-         tagLog("' val='");
+         tagOpen("pinMode");
+         tagAttr("pin",root["pin"].as<long>());
          if(root["val"].as<long>() == 1) {
-           tagLog("output'");
+           tagAttr("val","output");
            pinMode(root["pin"].as<long>(), OUTPUT);
            inputPins[root["pin"].as<long>()] = 0;
          } else {
-           tagLog("input'");
+           tagAttr("val","input");
+
            pinMode(root["pin"].as<long>(), INPUT);
            inputPins[root["pin"].as<long>()] = 1;
          }
-         tagLogln("/>");  
+         tagClose("pinMode");  
        }
        if (cmd == "digitalWrite") {
          handled = true;
-         tagLog("<digitalWrite pin='");
-         tagLog(root["pin"].as<long>());
-         tagLog("' ");
+         tagOpen("digitalWrite");
+         tagAttr("pin",root["pin"].as<long>());
+         //tagLog("<digitalWrite pin='");
+         //tagLog(root["pin"].as<long>());
+         //tagLog("' ");
          if(root["val"].as<long>() == 1) {
-           tagLog(" val='high'");
+           //tagLog(" val='high'");
+           tagAttr("val","high");
            digitalWrite(root["pin"].as<long>(),HIGH);
          } else {
-           tagLog(" val='low'");
+           //tagLog(" val='low'");
+           tagAttr("val","low");
+           
            digitalWrite(root["pin"].as<long>(),LOW);  
          }
-         tagLogln("/>");
+         tagClose("digitalWrite");
+         //tagLogln("/>");
+       }
+       if (cmd == "digitalRead") {
+         handled = true;
+         inputReading = digitalRead(root["pin"].as<long>());
+         
+         tagOpen("digitalRead");
+         tagAttr("pin", root["pin"].as<long>());
+         tagAttr("val",inputReading);
+         tagClose("digitalRead");
+         
+         jsonNewMsg("digitalRead");
+         jsonMsg("pin",root["pin"].as<long>());
+         jsonMsgln("val",inputReading);
        }
        if (!handled) {
          tagLog("<error id='2' name='unrecognised_command' val='");   
