@@ -1,10 +1,16 @@
-#include <ArduinoJson.h>
-String libVersion = "Protocol v0.1";
+// Copyright Simon Horton 2015
+// MIT License
+//
+// Arduino Json Api
+// https://github.com/sihorton/arduino-json-api
+String libVersion = "Arduino Json Api v0.1";
 
+#include <ArduinoJson.h>
 #define DEBUG
 #define TAGLOG
 #define JSONLOG
 #include "logHelper.h"
+
 
 //Digital input settings.
 int inputPinSize = 26;
