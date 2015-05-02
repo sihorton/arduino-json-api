@@ -2,19 +2,21 @@
 * Json API for access to core arduino library
 * http://www.arduino.cc/en/Tutorial/Foundations
 *
-/core/pinMode/7/1             -- set pin 7 to output mode
-/core/digitalWrite/7/1        -- set pin 7 to output HIGH
-/core/digitalWrite/7/0        -- set pin 7 to output LOW
-/core/pinMode/2/0             -- set pin 2 to input mode
-/core/digitalRead/2           -- read digital value of pin 2
-/core/analogRead/A0           -- read analog value of pin A0
-/core/analogWrite/8/255       -- output full power to pin 8 (needs to be PWM pin)
-/core/analogWrite/8/128       -- output power to pin 8 (needs to be PWM pin)
-/core/analogWrite/8/0         -- output zero power to pin 8 (needs to be PWM pin)
-/core/monitorPin/4            -- start monitoring pin 4 and output when its value changes
-/core/unmonitorPin/4          -- stop monitoring pin 4
-/core/clearMonitorPins        -- stop monitoring all pins
+/core/dpin/8/o             -- set pin 7 to output mode
+/core/dpin/8/1        -- set pin 7 to output HIGH
+/core/dpin/8/0        -- set pin 7 to output LOW
 
+/core/dpin/2/i             -- set pin 2 to input mode
+/core/dpin/2           -- read digital value of pin 2
+/core/apin/A0           -- read analog value of pin A0
+/core/apin/8/128          -- output power to pin 8 (needs to be PWM pin)
+/core/apin/8/255          -- output full power to pin 8 (needs to be PWM pin)
+/core/apin/8/0            -- output zero power to pin 8 (turn off)
+
+/core/mpin/4     -- start monitoring pin 4 and output when its value changes
+/core/mpin/4/-  -- stop monitoring pin 4
+/core/mpin/-      -- stop monitoring all pins
+/core/mpin/*      -- list all monitored pins
 **/
 
 #include "msg_core.h"
@@ -54,50 +56,121 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
        
     pinMode(getPin(param1), param2.toInt());
     return true;
-  }  
-  if (cmd == "digitalWrite") {
-    proto->msgOpen("digitalWrite","log");
-    proto->msgAttr("lib","core");
-    proto->msgAttr("pin",param1);
-    proto->msgAttr("val",param2);
-    proto->msgSend("digitalWrite");
-       
-    digitalWrite(getPin(param1), param2.toInt());
-    return true;
-  }
-  if (cmd == "digitalRead") {
-    int inputReading = digitalRead(getPin(param1));
-         
-    proto->msgOpen("digitalRead","out");
-    proto->msgAttr("lib","core");
+  } 
+  if (cmd == "dpin") {
+    proto->msgOpen("dpin","");
     proto->msgAttr("pin", param1);
-    proto->msgAttr("val",inputReading);
-    proto->msgSend("digitalRead");
+    if(param2 == "") {
+      //read the value.
+      int inputReading = digitalRead(getPin(param1));   
+      proto->msgAttr("val",inputReading);
+    } else if(param2 == "i") {
+      pinMode(getPin(param1), INPUT); 
+      proto->msgAttr("mode", "i");
+    } else if(param2 == "o") {
+      proto->msgAttr("mode", "o");
+      pinMode(getPin(param1), OUTPUT);
+    } else {
+      proto->msgAttr("val", param2);
+      digitalWrite(getPin(param1), param2.toInt()); 
+    } 
+    proto->msgSend("dpin");
     return true;
   }
-  if (cmd == "analogRead") { 
-   int inputReading = analogRead(getPin(param1));
-         
-    proto->msgOpen("analogRead","out");
-    proto->msgAttr("lib","core");
+  if (cmd == "apin") {
+    proto->msgOpen("apin","");
     proto->msgAttr("pin", param1);
-    proto->msgAttr("val",inputReading);
-    proto->msgSend("digitalRead");
+    if(param2 == "") {
+      int inputReading = analogRead(getPin(param1));
+      proto->msgAttr("val",inputReading);
+    } else {
+      proto->msgAttr("val",param2);     
+      analogWrite(getPin(param1), param2.toInt());
+    }
+    proto->msgSend("apin");
     return true;
   }
-  if (cmd == "analogWrite") { 
-    //you need to check the board has PWM marker by the pin for this to work.
-    int inputReading = analogRead(getPin(param1));
-    proto->msgOpen("analogWrite","log");
-    proto->msgAttr("lib","core");
-    proto->msgAttr("pin",param1);
-    proto->msgAttr("val",param2);
-    proto->msgSend("digitalWrite");
-       
-    analogWrite(getPin(param1), param2.toInt());
+  //core/mpin/4
+  //core/mpin/4/-
+  //core/mpin/-
+  //core/mpin/*
+  if (cmd == "mpin") {
+    if(param1 == "*") {
+      //list all monitors
+      int i;
+      for(i=0;i<monitorCount;i++) {
+        proto->msgOpen("pinMonitor","log");
+        proto->msgAttr("pin",monitorPin[i]);
+        proto->msgAttr("val",monitorPinVal[i]);
+        proto->msgSend();
+      }
+    } else if(param1 == "-") {
+      //remove all monitors
+      int i;
+      for(i=0;i<monitorCount;i++) {
+          proto->msgOpen("unmonitorPin","log");
+          proto->msgAttr("pin",monitorPin[i]);
+          proto->msgAttr("monitors", monitorCount-i-1);
+          proto->msgAttr("maxMonitors", monitorMaxCount+1);
+          proto->msgSend("unmonitorPin");
+          monitorPin[i] = 0;
+      }
+      monitorCount = 0;
+    } else if(param2=="-") {
+      //remove a monitor
+      proto->printer->println("remove monitor " + param1);
+      int i;
+      int p = param1.toInt();
+      for(i=0;i<monitorCount;i++) {
+        if(monitorPin[i] == p){
+          monitorPin[i] = monitorPin[monitorCount];
+          monitorPin[monitorCount] = 0;
+          monitorCount--;
+          proto->msgOpen("unmonitorPin","log");
+          proto->msgAttr("pin",param1);
+          proto->msgAttr("monitors", monitorCount);
+          proto->msgAttr("maxMonitors", monitorMaxCount+1);
+          proto->msgSend("unmonitorPin");
+          break;
+        }
+      } 
+    } else {
+      //add a monitor
+      //you need to check the board has PWM marker by the pin for this to work.
+      //loop through all pins, if already monitoring then do nothing
+      //if not found then add it at any with value 0.
+      int i;
+      for(i=0;i<monitorCount;i++) {
+        if(monitorPin[i] == getPin(param1)){
+          //already monitoring..
+          return true;
+        } 
+      }  
+      if (i<monitorMaxCount+1) {
+        //space to add this.
+        monitorPin[i] = getPin(param1);
+        monitorCount = i+1;
+        
+        proto->msgOpen("monitorPin","log");
+        proto->msgAttr("pin",param1);
+        proto->msgAttr("monitors", monitorCount);
+        proto->msgAttr("maxMonitors", monitorMaxCount+1);
+        proto->msgSend("monitorPin");
+      
+      } else {
+        //no space..
+        proto->msgOpen("Error","Error");
+        proto->msgAttr("lib","core");
+         proto->msgAttr("ErrId",4);
+         proto->msgAttr("ErrName","max_pin_monitors");           
+         proto->msgAttr("MaxPins",monitorMaxCount);
+         proto->msgSend("Error");
+      }  
+    } 
     return true;
   }
-  if (cmd == "monitorPin") { 
+  
+  /*if (cmd == "monitorPin") { 
     //you need to check the board has PWM marker by the pin for this to work.
     proto->msgOpen("monitorPin","log");
     proto->msgAttr("lib","core");
@@ -148,9 +221,9 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
     for(i=0;i<monitorCount;i++) {
       monitorPin[i] = 0;
     }  
-    monitorPin[0] = 0;
     return true;
   }
+  */
   return false;
 }
 int MSG_CORE::getPin(String pin) {

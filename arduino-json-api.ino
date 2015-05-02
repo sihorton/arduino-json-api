@@ -79,14 +79,12 @@ void loop() {
     } else if (protoState == 2) {
       if(c == '\n') {
         protoBuf[protoPos++] = '\0';
-        Serial.println("rest call:");
-        boolean handled = false;
         String lib;
         lib = strtok (protoBuf,"/");
         String cmd = strtok(NULL,"/");
         String param1 = strtok(NULL,"/");
         String param2 = strtok(NULL,"/");
-        
+        int handled = 0;
         if (lib == "servo") {handled = jservo.rst(cmd,param1,param2);}
         if (lib == "core") {handled = jcore.rst(cmd,param1,param2);}
         if (!handled) {
