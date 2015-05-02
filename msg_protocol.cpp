@@ -15,8 +15,8 @@ void MSG_PROTOCOL::msgOpen(String name,String type) {
   printer->print("{");
   this->comma = 0;
   this->msgAttr("id",this->msgCount++); 
-  this->msgAttr("cmd",name); 
   this->msgAttr("type",type); 
+  this->msgAttr("cmd",name); 
   this->msgAttr("time",millis()); 
 }
 void MSG_PROTOCOL::msgSend(String name){
@@ -51,3 +51,5 @@ void MSG_PROTOCOL::msgAttr(String key,int value){
 
 void MSG_PROTOCOL::msgText(String text){
 }
+
+

@@ -11,7 +11,7 @@ public:
 	//constructor - destructor
 	JSON_SERVO(MSG_PROTOCOL &protoer);
 	~JSON_SERVO();
-	void cmd(ArduinoJson::JsonObject&);
+	int cmd(ArduinoJson::JsonObject&);
   MSG_PROTOCOL* proto;
 };
 

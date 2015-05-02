@@ -15,8 +15,10 @@ String libVersion = "v0.1";
 //#include "logHelper.h"
 #include "msg_protocol.h"
 
+#include "msg_core.h"
 #include "json-servo.h"
 
+int baudRate = 9600;
 
 //features, comment out if you dont want them
 
@@ -26,13 +28,10 @@ int inputPins[26];
 int inputReading;
 long inputTime = millis();
 long inputDebounce = 20;
-  
-long msgCount = 0;
-int baudRate = 9600;
-
 
 MSG_PROTOCOL proto(Serial);
 JSON_SERVO jservo(proto);
+MSG_CORE jcore(proto);
 
 void setup() {
   // put your setup code here, to run once:
@@ -68,53 +67,16 @@ void loop() {
        boolean handled = false;
        const String cmd = root["cmd"].asString();
        const String lib = root["lib"].asString();
-       if (lib == "servo") {jservo.cmd(root);handled=true;}
-       if (cmd == "echo") {
-         handled = true;
-         Serial.print("echo");
-       }
-       if (cmd == "pinMode") {
-         handled = true;
-         proto.msgOpen("pinMode","log");
-         proto.msgAttr("pin",root["pin"].as<long>());
-         if(root["val"].as<long>() == 1) {
-           proto.msgAttr("val","output");
-           pinMode(root["pin"].as<long>(), OUTPUT);
-           inputPins[root["pin"].as<long>()] = 0;
-         } else {
-           proto.msgAttr("val","input");
-           pinMode(root["pin"].as<long>(), INPUT);
-           inputPins[root["pin"].as<long>()] = 1;
-         }
-         proto.msgSend("pinMode");  
-       }
-       if (cmd == "digitalWrite") {
-         handled = true;
-         proto.msgOpen("digitalWrite","log");
-         proto.msgAttr("pin",root["pin"].as<long>());
-         if(root["val"].as<long>() == 1) {
-           proto.msgAttr("val",1);
-           digitalWrite(root["pin"].as<long>(),HIGH);
-         } else {
-           proto.msgAttr("val",0);
-           digitalWrite(root["pin"].as<long>(),LOW);  
-         }
-         proto.msgSend("digitalWrite");
-       }
-       if (cmd == "digitalRead") {
-         handled = true;
-         inputReading = digitalRead(root["pin"].as<long>());
-         
-         proto.msgOpen("digitalRead","out");
-         proto.msgAttr("pin", root["pin"].as<long>());
-         proto.msgAttr("val",inputReading);
-         proto.msgSend("digitalRead");
-       }
+       
+       if (lib == "servo") {handled = jservo.cmd(root);}
+       if (lib == "core") {handled = jcore.cmd(root);}
+       
        if (!handled) {
            proto.msgOpen("Error","Error");
            proto.msgAttr("ErrId",2);
            proto.msgAttr("ErrName","unrecognised_command");
-           proto.msgAttr("cmd",root["cmd"].asString());
+           proto.msgAttr("lib",root["lib"].asString());
+           proto.msgAttr("incmd",root["cmd"].asString());
            //msgText(charBuf);
            proto.msgSend("Error");
        }
