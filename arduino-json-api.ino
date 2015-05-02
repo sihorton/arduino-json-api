@@ -5,6 +5,8 @@
 //
 // Arduino Json Api
 // https://github.com/sihorton/arduino-json-api
+//#define MSG_SUPPORT_JSON 1
+
 String libVersion = "v0.1";
 
 #include <ArduinoJson.h>
@@ -16,8 +18,9 @@ String libVersion = "v0.1";
 int baudRate = 9600;
 
 MSG_PROTOCOL proto(Serial);
-JSON_SERVO jservo(proto);
 MSG_CORE jcore(proto);
+JSON_SERVO jservo(proto);
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -47,7 +50,8 @@ void loop() {
         protoState = 2;  
       }
     } else if (protoState == 1) {
-        protoBuf[protoPos++] = c;
+#ifdef MSG_SUPPORT_JSON
+      protoBuf[protoPos++] = c;  
         if (c=='}') {
           protoBuf[protoPos++] = '\0';
           //end of message, process it..
@@ -76,6 +80,7 @@ void loop() {
           protoState = 0;  
           protoPos = 0;
         }
+#endif        
     } else if (protoState == 2) {
       if(c == '\n') {
         protoBuf[protoPos++] = '\0';
