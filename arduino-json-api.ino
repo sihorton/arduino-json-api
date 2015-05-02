@@ -3,12 +3,15 @@
 //
 // Arduino Json Api
 // https://github.com/sihorton/arduino-json-api
-String libVersion = "Arduino Json Api v0.1";
+String libVersion = "v0.1";
 
 #include <ArduinoJson.h>
 #define DEBUG
 #define TAGLOG
 #define JSONLOG
+
+#define TAGMSG
+//#define JSONMSG
 #include "logHelper.h"
 
 
@@ -20,14 +23,15 @@ long inputTime = millis();
 long inputDebounce = 20;
   
 long msgCount = 0;
+int baudRate = 9600;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
-  //tagLogln("<message>protocol running " + libVersion + "</message>");
-  tagOpen("message");
-  tagText("protocol running " + libVersion);
-  tagClose("message");
+  Serial.begin(baudRate);
+  msgOpen("message","log");
+  msgAttr("lib",libVersion);
+  msgAttr("baud",baudRate);
+  msgSend("message");
 }
 
 void loop() {
@@ -45,9 +49,11 @@ void loop() {
    if(i > 0) {
      JsonObject& root = jsonBuffer.parseObject(charBuf);
      if (!root.success()) {
-       tagLog("<Error id='1' name='json_parse_fail'>");
-       tagLog(charBuf);
-       tagLogln("</Error>");
+       msgOpen("Error","Error");
+       msgAttr("ErrId",1);
+       msgAttr("ErrName","json_parse_fail");
+       msgText(charBuf);
+       msgSend("Error");
      } else {
        //json
        boolean handled = false;
@@ -58,59 +64,48 @@ void loop() {
        }
        if (cmd == "pinMode") {
          handled = true;
-         tagOpen("pinMode");
-         tagAttr("pin",root["pin"].as<long>());
+         msgOpen("pinMode","log");
+         msgAttr("pin",root["pin"].as<long>());
          if(root["val"].as<long>() == 1) {
-           tagAttr("val","output");
+           msgAttr("val","output");
            pinMode(root["pin"].as<long>(), OUTPUT);
            inputPins[root["pin"].as<long>()] = 0;
          } else {
-           tagAttr("val","input");
-
+           msgAttr("val","input");
            pinMode(root["pin"].as<long>(), INPUT);
            inputPins[root["pin"].as<long>()] = 1;
          }
-         tagClose("pinMode");  
+         msgSend("pinMode");  
        }
        if (cmd == "digitalWrite") {
          handled = true;
-         tagOpen("digitalWrite");
-         tagAttr("pin",root["pin"].as<long>());
-         //tagLog("<digitalWrite pin='");
-         //tagLog(root["pin"].as<long>());
-         //tagLog("' ");
+         msgOpen("digitalWrite","log");
+         msgAttr("pin",root["pin"].as<long>());
          if(root["val"].as<long>() == 1) {
-           //tagLog(" val='high'");
-           tagAttr("val","high");
+           msgAttr("val",1);
            digitalWrite(root["pin"].as<long>(),HIGH);
          } else {
-           //tagLog(" val='low'");
-           tagAttr("val","low");
-           
+           msgAttr("val",0);
            digitalWrite(root["pin"].as<long>(),LOW);  
          }
-         tagClose("digitalWrite");
-         //tagLogln("/>");
+         msgSend("digitalWrite");
        }
        if (cmd == "digitalRead") {
          handled = true;
          inputReading = digitalRead(root["pin"].as<long>());
          
-         tagOpen("digitalRead");
-         tagAttr("pin", root["pin"].as<long>());
-         tagAttr("val",inputReading);
-         tagClose("digitalRead");
-         
-         jsonNewMsg("digitalRead");
-         jsonMsg("pin",root["pin"].as<long>());
-         jsonMsgln("val",inputReading);
+         msgOpen("digitalRead","out");
+         msgAttr("pin", root["pin"].as<long>());
+         msgAttr("val",inputReading);
+         msgSend("digitalRead");
        }
        if (!handled) {
-         tagLog("<error id='2' name='unrecognised_command' val='");   
-          tagLog(root["cmd"].asString());
-          tagLog("' >");
-          tagLog(charBuf);
-          tagLog("</error>");
+           msgOpen("Error","Error");
+           msgAttr("ErrId",2);
+           msgAttr("ErrName","unrecognised_command");
+           msgAttr("cmd",root["cmd"].asString());
+           //msgText(charBuf);
+           msgSend("Error");
        }
      }
    }
@@ -121,15 +116,10 @@ void loop() {
        if(inputReading != (inputPins[i] - 1) && (millis() - inputTime > inputDebounce)) {
            inputTime = millis();
            inputPins[i] = 1 + inputReading;
-           tagLog("<digitalRead pin='");
-           tagLog(i);
-           tagLog("'>");
-           tagLog(inputReading);
-           tagLogln("</digitalRead>");
-
-           jsonNewMsg("digitalRead");
-           jsonMsg("pin",i);
-           jsonMsgln("val",inputReading);
+           msgOpen("digitalRead","interrupt");
+           msgAttr("pin",i);
+           msgAttr("val",inputReading);
+           msgSend("digitalRead");
        }
      }
    }
