@@ -165,7 +165,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
         monitorSensitivity[i] = param2.toInt();
         
         proto->msgOpen("mpin","log");
-        proto->msgAttr("pin",printPin(param1));
+        proto->msgAttr("pin",param1);
         proto->msgAttr("sensitivity",param2);
         proto->msgAttr("monitors", monitorCount);
         proto->msgAttr("maxMonitors", MSG_CORE_MAX_DMONITORS+1);
