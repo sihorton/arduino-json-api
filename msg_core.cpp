@@ -33,7 +33,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
     proto->msgAttr("mode",param2);
     proto->msgSend("pinMode");  
        
-    pinMode(param1.toInt(), param2.toInt());
+    pinMode(getPin(param1), param2.toInt());
     return true;
   }  
   if (cmd == "digitalWrite") {
@@ -42,11 +42,11 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
     proto->msgAttr("val",param2);
     proto->msgSend("digitalWrite");
        
-    digitalWrite(param1.toInt(), param2.toInt());
+    digitalWrite(getPin(param1), param2.toInt());
     return true;
   }
   if (cmd == "digitalRead") {
-    int inputReading = digitalRead(param1.toInt());
+    int inputReading = digitalRead(getPin(param1));
          
     proto->msgOpen("digitalRead","out");
     proto->msgAttr("pin", param1);
@@ -54,5 +54,21 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
     proto->msgSend("digitalRead");
     return true;
   }
+  if (cmd == "analogRead") { 
+   int inputReading = analogRead(getPin(param1));
+         
+    proto->msgOpen("analogRead","out");
+    proto->msgAttr("pin", param1);
+    proto->msgAttr("val",inputReading);
+    proto->msgSend("digitalRead");
+    return true;
+  }
   return false;
+}
+int MSG_CORE::getPin(String pin) {
+  if(pin[0] == 'A') {
+    return A0 + pin.substring(1).toInt();
+  } else {
+    return pin.toInt();      
+  }
 }

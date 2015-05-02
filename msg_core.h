@@ -15,6 +15,9 @@ public:
   int cmd(ArduinoJson::JsonObject&);
   int rst(String cmd,String param1,String param2);
   MSG_PROTOCOL* proto;
+private:
+  int getPin(String pin);
+
 };
 
 #endif
