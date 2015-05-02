@@ -14,46 +14,17 @@ MSG_CORE::MSG_CORE(MSG_PROTOCOL &protoer){
 //<<destructor>>
 MSG_CORE::~MSG_CORE(){/*nothing to destruct*/}
 
-//process json command
+//convert json to ordered parameters call.
 int MSG_CORE::cmd(ArduinoJson::JsonObject& cmd){
   String mycmd = cmd["cmd"].asString();
   
-  if(mycmd == "api") {
-    handled = 1;
-    proto->printer->println("api match");
-    proto->msgOpen("servo", cmd["cmd"].asString());
-    proto->msgAttr("api","test");
-    proto->msgSend();  
-    return true;
-  }
-  if (mycmd == "pinMode") {    
-    proto->msgOpen("pinMode","log");
-    proto->msgAttr("pin",cmd["pin"].as<long>());
-    proto->msgSend("pinMode");  
-     
-    pinMode(cmd["pin"].as<long>(), cmd["val"].as<long>());
-    return true;
-  }
-  if (mycmd == "digitalWrite") {
-    proto->msgOpen("digitalWrite","log");
-    proto->msgAttr("pin",cmd["pin"].as<long>());
-    proto->msgAttr("val",cmd["val"].as<long>());
-    proto->msgSend("digitalWrite");
-       
-    digitalWrite(cmd["pin"].as<long>(), cmd["val"].as<long>());
-    return true;
-  }
-  if (mycmd == "digitalRead") {
-    int inputReading = digitalRead(cmd["pin"].as<long>());
-         
-    proto->msgOpen("digitalRead","out");
-    proto->msgAttr("pin", cmd["pin"].as<long>());
-    proto->msgAttr("val",inputReading);
-    proto->msgSend("digitalRead");
-    return true;
-  }
+  if (mycmd == "pinMode") return this->rst(mycmd,(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
+  if (mycmd == "digitalWrite") return this->rst(mycmd,(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
+  if (mycmd == "digitalRead") return this->rst(mycmd,(String)cmd["pin"].as<long>(), "");
+  
   return false;
 }
+
 //process rest command
 int MSG_CORE::rst(String cmd,String param1,String param2) {
   if (cmd == "pinMode") {
