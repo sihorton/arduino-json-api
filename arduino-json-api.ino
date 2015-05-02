@@ -10,10 +10,15 @@ String libVersion = "v0.1";
 #define TAGLOG
 #define JSONLOG
 
-#define TAGMSG
+//#define TAGMSG
 //#define JSONMSG
-#include "logHelper.h"
+//#include "logHelper.h"
+#include "msg_protocol.h"
 
+#include "json-servo.h"
+
+
+//features, comment out if you dont want them
 
 //Digital input settings.
 int inputPinSize = 26;
@@ -25,13 +30,17 @@ long inputDebounce = 20;
 long msgCount = 0;
 int baudRate = 9600;
 
+
+MSG_PROTOCOL proto(Serial);
+JSON_SERVO jservo(proto);
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(baudRate);
-  msgOpen("message","log");
-  msgAttr("lib",libVersion);
-  msgAttr("baud",baudRate);
-  msgSend("message");
+  proto.msgOpen("message","log");
+  proto.msgAttr("lib",libVersion);
+  proto.msgAttr("baud",baudRate);
+  proto.msgSend();
 }
 
 void loop() {
@@ -49,63 +58,65 @@ void loop() {
    if(i > 0) {
      JsonObject& root = jsonBuffer.parseObject(charBuf);
      if (!root.success()) {
-       msgOpen("Error","Error");
-       msgAttr("ErrId",1);
-       msgAttr("ErrName","json_parse_fail");
-       msgText(charBuf);
-       msgSend("Error");
+       proto.msgOpen("Error","Error");
+       proto.msgAttr("ErrId",1);
+       proto.msgAttr("ErrName","json_parse_fail");
+       proto.msgText(charBuf);
+       proto.msgSend("Error");
      } else {
        //json
        boolean handled = false;
        const String cmd = root["cmd"].asString();
+       const String lib = root["lib"].asString();
+       if (lib == "servo") {jservo.cmd(root);handled=true;}
        if (cmd == "echo") {
          handled = true;
          Serial.print("echo");
        }
        if (cmd == "pinMode") {
          handled = true;
-         msgOpen("pinMode","log");
-         msgAttr("pin",root["pin"].as<long>());
+         proto.msgOpen("pinMode","log");
+         proto.msgAttr("pin",root["pin"].as<long>());
          if(root["val"].as<long>() == 1) {
-           msgAttr("val","output");
+           proto.msgAttr("val","output");
            pinMode(root["pin"].as<long>(), OUTPUT);
            inputPins[root["pin"].as<long>()] = 0;
          } else {
-           msgAttr("val","input");
+           proto.msgAttr("val","input");
            pinMode(root["pin"].as<long>(), INPUT);
            inputPins[root["pin"].as<long>()] = 1;
          }
-         msgSend("pinMode");  
+         proto.msgSend("pinMode");  
        }
        if (cmd == "digitalWrite") {
          handled = true;
-         msgOpen("digitalWrite","log");
-         msgAttr("pin",root["pin"].as<long>());
+         proto.msgOpen("digitalWrite","log");
+         proto.msgAttr("pin",root["pin"].as<long>());
          if(root["val"].as<long>() == 1) {
-           msgAttr("val",1);
+           proto.msgAttr("val",1);
            digitalWrite(root["pin"].as<long>(),HIGH);
          } else {
-           msgAttr("val",0);
+           proto.msgAttr("val",0);
            digitalWrite(root["pin"].as<long>(),LOW);  
          }
-         msgSend("digitalWrite");
+         proto.msgSend("digitalWrite");
        }
        if (cmd == "digitalRead") {
          handled = true;
          inputReading = digitalRead(root["pin"].as<long>());
          
-         msgOpen("digitalRead","out");
-         msgAttr("pin", root["pin"].as<long>());
-         msgAttr("val",inputReading);
-         msgSend("digitalRead");
+         proto.msgOpen("digitalRead","out");
+         proto.msgAttr("pin", root["pin"].as<long>());
+         proto.msgAttr("val",inputReading);
+         proto.msgSend("digitalRead");
        }
        if (!handled) {
-           msgOpen("Error","Error");
-           msgAttr("ErrId",2);
-           msgAttr("ErrName","unrecognised_command");
-           msgAttr("cmd",root["cmd"].asString());
+           proto.msgOpen("Error","Error");
+           proto.msgAttr("ErrId",2);
+           proto.msgAttr("ErrName","unrecognised_command");
+           proto.msgAttr("cmd",root["cmd"].asString());
            //msgText(charBuf);
-           msgSend("Error");
+           proto.msgSend("Error");
        }
      }
    }
@@ -116,10 +127,10 @@ void loop() {
        if(inputReading != (inputPins[i] - 1) && (millis() - inputTime > inputDebounce)) {
            inputTime = millis();
            inputPins[i] = 1 + inputReading;
-           msgOpen("digitalRead","interrupt");
-           msgAttr("pin",i);
-           msgAttr("val",inputReading);
-           msgSend("digitalRead");
+           proto.msgOpen("digitalRead","interrupt");
+           proto.msgAttr("pin",i);
+           proto.msgAttr("val",inputReading);
+           proto.msgSend("digitalRead");
        }
      }
    }
