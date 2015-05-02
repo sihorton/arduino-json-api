@@ -6,6 +6,8 @@
 #include <ArduinoJson.h>
 #include "msg_protocol.h"
 
+#define MSG_CORE_MAX_DMONITORS 3
+
 //class
 class MSG_CORE { 
 public:
@@ -23,9 +25,8 @@ public:
 private:
   int getPin(String pin);
   int monitorCount = 0;
-  int monitorMaxCount = 3;
-  int monitorPin[3];
-  int monitorPinVal[3];
+  int monitorPin[MSG_CORE_MAX_DMONITORS];
+  int monitorPinVal[MSG_CORE_MAX_DMONITORS];
 };
 
 #endif

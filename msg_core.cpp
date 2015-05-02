@@ -2,16 +2,17 @@
 * Json API for access to core arduino library
 * http://www.arduino.cc/en/Tutorial/Foundations
 *
-/core/dpin/8/o             -- set pin 7 to output mode
+/core/dpin/8/w             -- set pin 7 to write mode
 /core/dpin/8/1        -- set pin 7 to output HIGH
 /core/dpin/8/0        -- set pin 7 to output LOW
-
-/core/dpin/2/i             -- set pin 2 to input mode
-/core/dpin/2           -- read digital value of pin 2
-/core/apin/A0           -- read analog value of pin A0
 /core/apin/8/128          -- output power to pin 8 (needs to be PWM pin)
 /core/apin/8/255          -- output full power to pin 8 (needs to be PWM pin)
 /core/apin/8/0            -- output zero power to pin 8 (turn off)
+
+/core/dpin/2/r             -- set pin 2 to read mode
+/core/dpin/2/p             -- set pin 2 to INPUT_PULLUP mode
+/core/dpin/2           -- read digital value of pin 2
+/core/apin/A0           -- read analog value of pin A0
 
 /core/mpin/4     -- start monitoring pin 4 and output when its value changes
 /core/mpin/4/-  -- stop monitoring pin 4
@@ -64,11 +65,14 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
       //read the value.
       int inputReading = digitalRead(getPin(param1));   
       proto->msgAttr("val",inputReading);
-    } else if(param2 == "i") {
+    } else if(param2 == "r") {
       pinMode(getPin(param1), INPUT); 
-      proto->msgAttr("mode", "i");
-    } else if(param2 == "o") {
-      proto->msgAttr("mode", "o");
+      proto->msgAttr("mode", "r");
+    } else if(param2 == "p") {
+      pinMode(getPin(param1), INPUT_PULLUP); 
+      proto->msgAttr("mode", "p");
+    } else if(param2 == "w") {
+      proto->msgAttr("mode", "w");
       pinMode(getPin(param1), OUTPUT);
     } else {
       proto->msgAttr("val", param2);
@@ -99,7 +103,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
       //list all monitors
       int i;
       for(i=0;i<monitorCount;i++) {
-        proto->msgOpen("pinMonitor","log");
+        proto->msgOpen("dpin","monitor*");
         proto->msgAttr("pin",monitorPin[i]);
         proto->msgAttr("val",monitorPinVal[i]);
         proto->msgSend();
@@ -111,7 +115,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
           proto->msgOpen("unmonitorPin","log");
           proto->msgAttr("pin",monitorPin[i]);
           proto->msgAttr("monitors", monitorCount-i-1);
-          proto->msgAttr("maxMonitors", monitorMaxCount+1);
+          proto->msgAttr("maxMonitors", MSG_CORE_MAX_DMONITORS+1);
           proto->msgSend("unmonitorPin");
           monitorPin[i] = 0;
       }
@@ -129,7 +133,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
           proto->msgOpen("unmonitorPin","log");
           proto->msgAttr("pin",param1);
           proto->msgAttr("monitors", monitorCount);
-          proto->msgAttr("maxMonitors", monitorMaxCount+1);
+          proto->msgAttr("maxMonitors", MSG_CORE_MAX_DMONITORS+1);
           proto->msgSend("unmonitorPin");
           break;
         }
@@ -146,16 +150,16 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
           return true;
         } 
       }  
-      if (i<monitorMaxCount+1) {
+      if (i<MSG_CORE_MAX_DMONITORS+1) {
         //space to add this.
         monitorPin[i] = getPin(param1);
         monitorCount = i+1;
         
-        proto->msgOpen("monitorPin","log");
+        proto->msgOpen("mpin","log");
         proto->msgAttr("pin",param1);
         proto->msgAttr("monitors", monitorCount);
-        proto->msgAttr("maxMonitors", monitorMaxCount+1);
-        proto->msgSend("monitorPin");
+        proto->msgAttr("maxMonitors", MSG_CORE_MAX_DMONITORS+1);
+        proto->msgSend("mpin");
       
       } else {
         //no space..
@@ -163,67 +167,13 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
         proto->msgAttr("lib","core");
          proto->msgAttr("ErrId",4);
          proto->msgAttr("ErrName","max_pin_monitors");           
-         proto->msgAttr("MaxPins",monitorMaxCount);
+         proto->msgAttr("MaxMonitors",MSG_CORE_MAX_DMONITORS);
          proto->msgSend("Error");
       }  
     } 
     return true;
   }
   
-  /*if (cmd == "monitorPin") { 
-    //you need to check the board has PWM marker by the pin for this to work.
-    proto->msgOpen("monitorPin","log");
-    proto->msgAttr("lib","core");
-    proto->msgAttr("pin",param1);
-    proto->msgSend("monitorPin");
-    //loop through all pins, if already monitoring then do nothing
-    //if not found then add it at any with value 0.
-    int i;
-    for(i=0;i<monitorCount;i++) {
-      if(monitorPin[i] == getPin(param1)){
-        //already monitoring..
-        return true;
-      } 
-    }  
-    if (i<monitorMaxCount+1) {
-      //space to add this.
-      monitorPin[i] = getPin(param1);
-      monitorCount = i+1;
-    } else {
-      //no space..
-      proto->msgOpen("Error","Error");
-      proto->msgAttr("lib","core");
-       proto->msgAttr("ErrId",4);
-       proto->msgAttr("ErrName","max_pin_monitors");           
-       proto->msgAttr("MaxPins",monitorMaxCount);
-       proto->msgSend("Error");
-    }  
-    return true;
-  }
-  if (cmd == "clearMonitorPins") { 
-    int i;
-    for(i=0;i<monitorCount;i++) {
-      monitorPin[i] = 0;
-    }  
-    monitorCount = 0;
-    proto->msgOpen("clearMonitorPins","log");
-    proto->msgAttr("lib","core");
-    proto->msgSend("unmonitorPin");
-    
-    return true;
-  }
-  if (cmd == "unmonitorPin") { 
-    proto->msgOpen("unmonitorPin","log");
-    proto->msgAttr("lib","core");
-     proto->msgAttr("pin",param1);
-    proto->msgSend("unmonitorPin");
-    int i;
-    for(i=0;i<monitorCount;i++) {
-      monitorPin[i] = 0;
-    }  
-    return true;
-  }
-  */
   return false;
 }
 int MSG_CORE::getPin(String pin) {
@@ -239,10 +189,10 @@ int MSG_CORE::monitorPins() {
     if (monitorPin[i] > 0) {
        int inputReading = digitalRead(monitorPin[i]);
        if(inputReading != monitorPinVal[i]) {// && (millis() - inputTime > inputDebounce)) {
-         proto->msgOpen("monitoredPin","out");
+         proto->msgOpen("dpin","monitor");
          proto->msgAttr("pin", monitorPin[i]);
          proto->msgAttr("val",inputReading);
-         proto->msgSend("monitoredPin");
+         proto->msgSend("dpin");
          monitorPinVal[i] = inputReading; 
        }
      }
