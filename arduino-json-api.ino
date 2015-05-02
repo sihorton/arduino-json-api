@@ -101,8 +101,7 @@ void loop() {
         String param1 = strtok(NULL,"/");
         String param2 = strtok(NULL,"/");
         
-        Serial.println(lib);
-        if (lib == "servo") {handled = jservo.rst(protoBuf);}
+        if (lib == "servo") {handled = jservo.rst(cmd,param1,param2);}
         if (lib == "core") {handled = jcore.rst(cmd,param1,param2);}
         if (!handled) {
            proto.msgOpen("Error","Error");
@@ -117,48 +116,11 @@ void loop() {
       }
     }
   }
+  
+  
 }
 /*
 void loop() {
-  //declare input buffer and json buffer sizes.
-  StaticJsonBuffer<500> jsonBuffer;
-  char charBuf[500];
-   
-  int i = 0;
-  while (Serial.available()) {
-     delay(3); //delay to allow buffer to fill
-     if(Serial.available() > 0) {
-       charBuf[i++] = (char)Serial.read();
-     }
-   }
-   if(i > 0) {
-     JsonObject& root = jsonBuffer.parseObject(charBuf);
-     if (!root.success()) {
-       proto.msgOpen("Error","Error");
-       proto.msgAttr("ErrId",1);
-       proto.msgAttr("ErrName","json_parse_fail");
-       proto.msgText(charBuf);
-       proto.msgSend("Error");
-     } else {
-       //json
-       boolean handled = false;
-       const String cmd = root["cmd"].asString();
-       const String lib = root["lib"].asString();
-       
-       if (lib == "servo") {handled = jservo.cmd(root);}
-       if (lib == "core") {handled = jcore.cmd(root);}
-       
-       if (!handled) {
-           proto.msgOpen("Error","Error");
-           proto.msgAttr("ErrId",2);
-           proto.msgAttr("ErrName","unrecognised_command");
-           proto.msgAttr("lib",root["lib"].asString());
-           proto.msgAttr("incmd",root["cmd"].asString());
-           //msgText(charBuf);
-           proto.msgSend("Error");
-       }
-     }
-   }
    //check any input pins.
    for(int i=0; i<inputPinSize; i++) {
      if (inputPins[i] > 0) {

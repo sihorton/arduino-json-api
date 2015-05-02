@@ -21,6 +21,8 @@ int MSG_CORE::cmd(ArduinoJson::JsonObject& cmd){
   if (mycmd == "pinMode") return this->rst(mycmd,(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
   if (mycmd == "digitalWrite") return this->rst(mycmd,(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
   if (mycmd == "digitalRead") return this->rst(mycmd,(String)cmd["pin"].as<long>(), "");
+  if (mycmd == "analogRead") return this->rst(mycmd,(String)cmd["pin"].as<long>(), "");
+  if (mycmd == "analogWrite") return this->rst(mycmd,(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
   
   return false;
 }
@@ -61,6 +63,17 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
     proto->msgAttr("pin", param1);
     proto->msgAttr("val",inputReading);
     proto->msgSend("digitalRead");
+    return true;
+  }
+  if (cmd == "analogWrite") { 
+    //you need to check the board has PWM marker by the pin for this to work.
+    int inputReading = analogRead(getPin(param1));
+    proto->msgOpen("analogWrite","log");
+    proto->msgAttr("pin",param1);
+    proto->msgAttr("val",param2);
+    proto->msgSend("digitalWrite");
+       
+    analogWrite(getPin(param1), param2.toInt());
     return true;
   }
   return false;
