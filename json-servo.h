@@ -12,6 +12,7 @@ public:
 	JSON_SERVO(MSG_PROTOCOL &protoer);
 	~JSON_SERVO();
 	int cmd(ArduinoJson::JsonObject&);
+        int rst(char*);
   MSG_PROTOCOL* proto;
 };
 

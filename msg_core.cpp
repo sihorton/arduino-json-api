@@ -14,9 +14,8 @@ MSG_CORE::MSG_CORE(MSG_PROTOCOL &protoer){
 //<<destructor>>
 MSG_CORE::~MSG_CORE(){/*nothing to destruct*/}
 
-//process the command
+//process json command
 int MSG_CORE::cmd(ArduinoJson::JsonObject& cmd){
-  int handled = 0;
   String mycmd = cmd["cmd"].asString();
   
   if(mycmd == "api") {
@@ -25,34 +24,64 @@ int MSG_CORE::cmd(ArduinoJson::JsonObject& cmd){
     proto->msgOpen("servo", cmd["cmd"].asString());
     proto->msgAttr("api","test");
     proto->msgSend();  
+    return true;
   }
-  if (mycmd == "pinMode") {
-    handled = true;
-     
+  if (mycmd == "pinMode") {    
     proto->msgOpen("pinMode","log");
     proto->msgAttr("pin",cmd["pin"].as<long>());
     proto->msgSend("pinMode");  
      
     pinMode(cmd["pin"].as<long>(), cmd["val"].as<long>());
+    return true;
   }
   if (mycmd == "digitalWrite") {
-    handled = true;
-       
     proto->msgOpen("digitalWrite","log");
     proto->msgAttr("pin",cmd["pin"].as<long>());
     proto->msgAttr("val",cmd["val"].as<long>());
     proto->msgSend("digitalWrite");
        
     digitalWrite(cmd["pin"].as<long>(), cmd["val"].as<long>());
+    return true;
   }
   if (mycmd == "digitalRead") {
-    handled = true;
     int inputReading = digitalRead(cmd["pin"].as<long>());
          
     proto->msgOpen("digitalRead","out");
     proto->msgAttr("pin", cmd["pin"].as<long>());
     proto->msgAttr("val",inputReading);
     proto->msgSend("digitalRead");
+    return true;
   }
-  return handled;
+  return false;
+}
+//process rest command
+int MSG_CORE::rst(String cmd,String param1,String param2) {
+  if (cmd == "pinMode") {
+    proto->msgOpen("pinMode","log");
+    proto->msgAttr("pin",param1);
+    proto->msgAttr("mode",param2);
+    proto->msgSend("pinMode");  
+       
+    pinMode(param1.toInt(), param2.toInt());
+    return true;
+  }  
+  if (cmd == "digitalWrite") {
+    proto->msgOpen("digitalWrite","log");
+    proto->msgAttr("pin",param1);
+    proto->msgAttr("val",param2);
+    proto->msgSend("digitalWrite");
+       
+    digitalWrite(param1.toInt(), param2.toInt());
+    return true;
+  }
+  if (cmd == "digitalRead") {
+    int inputReading = digitalRead(param1.toInt());
+         
+    proto->msgOpen("digitalRead","out");
+    proto->msgAttr("pin", param1);
+    proto->msgAttr("val",inputReading);
+    proto->msgSend("digitalRead");
+    return true;
+  }
+  return false;
 }

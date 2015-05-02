@@ -13,6 +13,7 @@ public:
   MSG_CORE(MSG_PROTOCOL &protoer);
   ~MSG_CORE();
   int cmd(ArduinoJson::JsonObject&);
+  int rst(String cmd,String param1,String param2);
   MSG_PROTOCOL* proto;
 };
 

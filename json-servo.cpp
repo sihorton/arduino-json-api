@@ -27,3 +27,5 @@ int JSON_SERVO::cmd(ArduinoJson::JsonObject& cmd) {
   }
   return handled;
 }
+int JSON_SERVO::rst(char* cmd) {
+}
