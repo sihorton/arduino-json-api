@@ -42,6 +42,59 @@ void setup() {
   proto.msgSend();
 }
 
+int protoState = 0;
+int protoPos = 0;
+static char protoBuf[500];
+void loop() {
+  while (Serial.available()) {
+    char c = (char)Serial.read();
+    if(protoState == 0) {
+      //scanning for a new message...
+      if(c == '{') {
+        //json message
+        protoState = 1;
+        protoBuf[0] = c;
+        protoPos=1;
+      } else if(c=='/') {
+        //rest call
+        protoState = 2;  
+      }
+    } else if (protoState == 1) {
+        protoBuf[protoPos++] = c;
+        if (c=='}') {
+          protoBuf[protoPos++] = '\0';
+          //end of message, process it..
+          StaticJsonBuffer<500> jsonBuffer;
+          JsonObject& root = jsonBuffer.parseObject(protoBuf);
+          if (!root.success()) {
+             proto.msgOpen("Error","Error");
+             proto.msgAttr("ErrId",1);
+             proto.msgAttr("ErrName","json_parse_fail");
+             proto.msgSend("Error");
+           } else {
+             //json
+             boolean handled = false;
+             const String lib = root["lib"].asString();
+             if (lib == "servo") {handled = jservo.cmd(root);}
+             if (lib == "core") {handled = jcore.cmd(root);}
+             if (!handled) {
+               proto.msgOpen("Error","Error");
+               proto.msgAttr("ErrId",2);
+               proto.msgAttr("ErrName","unrecognised command");
+               proto.msgAttr("inpute",root["cmd"].asString());
+               
+               proto.msgSend("Error");
+             }
+          }  
+          protoState = 0;  
+          protoPos = 0;
+        }
+    } else if (protoState == 2) {
+      
+    }
+  }
+}
+/*
 void loop() {
   //declare input buffer and json buffer sizes.
   StaticJsonBuffer<500> jsonBuffer;
@@ -99,5 +152,5 @@ void loop() {
    
    delay(50); // give the Arduino some breathing room.
 }
-
+*/
 
