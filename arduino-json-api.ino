@@ -8,28 +8,12 @@
 String libVersion = "v0.1";
 
 #include <ArduinoJson.h>
-#define DEBUG
-#define TAGLOG
-#define JSONLOG
-
-//#define TAGMSG
-//#define JSONMSG
-//#include "logHelper.h"
 #include "msg_protocol.h"
 
 #include "msg_core.h"
 #include "json-servo.h"
 
 int baudRate = 9600;
-
-//features, comment out if you dont want them
-
-//Digital input settings.
-int inputPinSize = 26;
-int inputPins[26];
-int inputReading;
-long inputTime = millis();
-long inputDebounce = 20;
 
 MSG_PROTOCOL proto(Serial);
 JSON_SERVO jservo(proto);
@@ -121,24 +105,4 @@ void loop() {
   jcore.monitorPins();
   
 }
-/*
-void loop() {
-   //check any input pins.
-   for(int i=0; i<inputPinSize; i++) {
-     if (inputPins[i] > 0) {
-       inputReading = digitalRead(i);
-       if(inputReading != (inputPins[i] - 1) && (millis() - inputTime > inputDebounce)) {
-           inputTime = millis();
-           inputPins[i] = 1 + inputReading;
-           proto.msgOpen("digitalRead","interrupt");
-           proto.msgAttr("pin",i);
-           proto.msgAttr("val",inputReading);
-           proto.msgSend("digitalRead");
-       }
-     }
-   }
-   
-   delay(50); // give the Arduino some breathing room.
-}
-*/
 
