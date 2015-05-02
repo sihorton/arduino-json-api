@@ -31,6 +31,7 @@ public:
   
 private:
   int getPin(String pin);
+  String printPin(int pin);
   int monitorCount = 0;
   int monitorPin[MSG_CORE_MAX_DMONITORS];
   int monitorLVal[MSG_CORE_MAX_DMONITORS];

@@ -110,7 +110,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
       int i;
       for(i=0;i<monitorCount;i++) {
         proto->msgOpen("dpin","monitor*");
-        proto->msgAttr("pin",monitorPin[i]);
+        proto->msgAttr("pin",printPin(monitorPin[i]));
         proto->msgAttr("val",monitorLVal[i]);
         proto->msgSend();
       }
@@ -119,7 +119,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
       int i;
       for(i=0;i<monitorCount;i++) {
           proto->msgOpen("unmonitorPin","log");
-          proto->msgAttr("pin",monitorPin[i]);
+          proto->msgAttr("pin",printPin(monitorPin[i]));
           proto->msgAttr("monitors", monitorCount-i-1);
           proto->msgAttr("maxMonitors", MSG_CORE_MAX_DMONITORS+1);
           proto->msgSend("unmonitorPin");
@@ -130,7 +130,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
       //remove a monitor
       proto->printer->println("remove monitor " + param1);
       int i;
-      int p = param1.toInt();
+      int p = getPin(param1);
       for(i=0;i<monitorCount;i++) {
         if(monitorPin[i] == p){
           monitorPin[i] = monitorPin[monitorCount];
@@ -165,7 +165,7 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
         monitorSensitivity[i] = param2.toInt();
         
         proto->msgOpen("mpin","log");
-        proto->msgAttr("pin",param1);
+        proto->msgAttr("pin",printPin(param1));
         proto->msgAttr("sensitivity",param2);
         proto->msgAttr("monitors", monitorCount);
         proto->msgAttr("maxMonitors", MSG_CORE_MAX_DMONITORS+1);
@@ -193,9 +193,17 @@ int MSG_CORE::getPin(String pin) {
     return pin.toInt();      
   }
 }
+String MSG_CORE::printPin(int pin) {
+  if(pin > A0) {
+    return "A" + String(pin - A0);
+  } else {
+    return String(pin);      
+  }
+}
 int MSG_CORE::monitorPins() {
   for(int i=0; i<monitorCount; i++) {
     if (monitorPin[i] > 0) {
+      boolean changed = false;
       int inputReading;
       if (monitorPin[i] > A0) {
         inputReading = analogRead(monitorPin[i]);
@@ -203,24 +211,20 @@ int MSG_CORE::monitorPins() {
         //smooth the values so that 0 and 1023 always show up
         if(inputReading < monitorSensitivity[i]) inputReading = 0;
         if(inputReading > 1023-monitorSensitivity[i]) inputReading = 1023;
-          
-        if (inputReading > monitorLVal[i] + monitorSensitivity[i] || inputReading < monitorLVal[i] - monitorSensitivity[i]) {
-          proto->msgOpen("dpin","monitor");
-          proto->msgAttr("pin", monitorPin[i]);
-          proto->msgAttr("val",inputReading);
-          proto->msgAttr("sensitivity",monitorSensitivity[i]);
-          proto->msgSend("dpin");
-          monitorLVal[i] = inputReading; 
-        }
+        
+        if (inputReading > monitorLVal[i] + monitorSensitivity[i] || inputReading < monitorLVal[i] - monitorSensitivity[i]) changed = true;
       } else {
         inputReading = digitalRead(monitorPin[i]);
-         if(inputReading != monitorLVal[i]) {// && (millis() - inputTime > inputDebounce)) {
-           proto->msgOpen("dpin","monitor");
-           proto->msgAttr("pin", monitorPin[i]);
-           proto->msgAttr("val",inputReading);
-           proto->msgSend("dpin");
-           monitorLVal[i] = inputReading; 
-         }
+         if(inputReading != monitorLVal[i]) changed = true;
+       }
+       if(changed) {
+         monitorLVal[i] = inputReading; 
+         proto->msgOpen("dpin","monitor");
+         proto->msgAttr("pin", printPin(monitorPin[i]));
+         proto->msgAttr("val",inputReading);
+         proto->msgAttr("sensitivity",monitorSensitivity[i]);
+         proto->msgSend("dpin");
+         monitorLVal[i] = inputReading; 
        }
      }
    }
