@@ -9,15 +9,23 @@
 //class
 class MSG_CORE { 
 public:
+  MSG_PROTOCOL* proto;
+  
   //constructor - destructor
   MSG_CORE(MSG_PROTOCOL &protoer);
   ~MSG_CORE();
+  
   int cmd(ArduinoJson::JsonObject&);
   int rst(String cmd,String param1,String param2);
-  MSG_PROTOCOL* proto;
+  int monitorPins();
+
+
 private:
   int getPin(String pin);
-
+  int monitorCount = 0;
+  int monitorMaxCount = 3;
+  int monitorPin[3];
+  int monitorPinVal[3];
 };
 
 #endif

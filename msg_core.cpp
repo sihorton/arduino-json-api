@@ -76,6 +76,56 @@ int MSG_CORE::rst(String cmd,String param1,String param2) {
     analogWrite(getPin(param1), param2.toInt());
     return true;
   }
+  if (cmd == "monitorPin") { 
+    //you need to check the board has PWM marker by the pin for this to work.
+    proto->msgOpen("monitorPin","log");
+    proto->msgAttr("pin",param1);
+    proto->msgSend("monitorPin");
+    //loop through all pins, if already monitoring then do nothing
+    //if not found then add it at any with value 0.
+    int i;
+    for(i=0;i<monitorCount;i++) {
+      if(monitorPin[i] == getPin(param1)){
+        //already monitoring..
+        return true;
+      } 
+    }  
+    if (i<monitorMaxCount+1) {
+      //space to add this.
+      monitorPin[i] = getPin(param1);
+      monitorCount = i+1;
+    } else {
+      //no space..
+      proto->msgOpen("Error","Error");
+       proto->msgAttr("ErrId",4);
+       proto->msgAttr("ErrName","max_pin_monitors");           
+       proto->msgAttr("MaxPins",monitorMaxCount);
+       proto->msgSend("Error");
+    }  
+    return true;
+  }
+  if (cmd == "clearMonitorPins") { 
+    int i;
+    for(i=0;i<monitorCount;i++) {
+      monitorPin[i] = 0;
+    }  
+    monitorCount = 0;
+    proto->msgOpen("clearMonitorPins","log");
+    proto->msgSend("unmonitorPin");
+    
+    return true;
+  }
+  if (cmd == "unmonitorPin") { 
+    proto->msgOpen("unmonitorPin","log");
+    proto->msgAttr("pin",param1);
+    proto->msgSend("unmonitorPin");
+    int i;
+    for(i=0;i<monitorCount;i++) {
+      monitorPin[i] = 0;
+    }  
+    monitorPin[0] = 0;
+    return true;
+  }
   return false;
 }
 int MSG_CORE::getPin(String pin) {
@@ -84,4 +134,21 @@ int MSG_CORE::getPin(String pin) {
   } else {
     return pin.toInt();      
   }
+}
+int MSG_CORE::monitorPins() {
+
+  for(int i=0; i<monitorCount; i++) {
+    if (monitorPin[i] > 0) {
+       int inputReading = digitalRead(monitorPin[i]);
+       if(inputReading != monitorPinVal[i]) {// && (millis() - inputTime > inputDebounce)) {
+         proto->msgOpen("monitoredPin","out");
+         proto->msgAttr("pin", monitorPin[i]);
+         proto->msgAttr("val",inputReading);
+         proto->msgSend("monitoredPin");
+         monitorPinVal[i] = inputReading; 
+       }
+     }
+   }
+  
+  return true;
 }

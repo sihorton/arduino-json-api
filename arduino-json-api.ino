@@ -118,7 +118,7 @@ void loop() {
       }
     }
   }
-  
+  jcore.monitorPins();
   
 }
 /*
