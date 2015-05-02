@@ -34,14 +34,18 @@ MSG_CORE::~MSG_CORE(){/*nothing to destruct*/}
 int MSG_CORE::cmd(ArduinoJson::JsonObject& cmd){
   String mycmd = cmd["cmd"].asString();
   
-  if (mycmd == "pinMode") return this->rst(mycmd,(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
-  if (mycmd == "digitalWrite") return this->rst(mycmd,(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
-  if (mycmd == "digitalRead") return this->rst(mycmd,(String)cmd["pin"].as<long>(), "");
-  if (mycmd == "analogRead") return this->rst(mycmd,(String)cmd["pin"].as<long>(), "");
-  if (mycmd == "analogWrite") return this->rst(mycmd,(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
-  if (mycmd == "monitorPin") return this->rst(mycmd,(String)cmd["pin"].as<long>(), "");
-  if (mycmd == "unmonitorPin") return this->rst(mycmd,(String)cmd["pin"].as<long>(), "");
-  if (mycmd == "clearMonitorPins") return this->rst(mycmd,(String)cmd["pin"].as<long>(), "");
+  if (mycmd == "pinMode") {
+    const char* m = cmd["mode"];
+    return this->rst("dpin",(String)cmd["pin"].as<long>(), m);
+  } 
+  if (mycmd == "digitalWrite") return this->rst("dpin",(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
+  if (mycmd == "digitalRead") return this->rst("dpin",(String)cmd["pin"].as<long>(), "");
+  if (mycmd == "analogRead") return this->rst("apin",(String)cmd["pin"].as<long>(), "");
+  if (mycmd == "analogWrite") return this->rst("apin",(String)cmd["pin"].as<long>(), (String)cmd["val"].as<long>());
+  if (mycmd == "monitorPin") return this->rst("mpin",(String)cmd["pin"].as<long>(), "");
+  if (mycmd == "unmonitorPin") return this->rst("mpin",(String)cmd["pin"].as<long>(), "-");
+  if (mycmd == "clearMonitorPins") return this->rst("mpin","-", "");
+  if (mycmd == "listMonitorPins") return this->rst("mpin","-", "*");
   
   return false;
 }
