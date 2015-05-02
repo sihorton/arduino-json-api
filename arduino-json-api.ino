@@ -1,3 +1,5 @@
+#include <Servo.h>
+
 // Copyright Simon Horton 2015
 // MIT License
 //
